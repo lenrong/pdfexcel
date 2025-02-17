@@ -96,7 +96,6 @@
     <div class="city-animation"></div>
     <script>
         let extractedData = [];
-        let tableLayout = []; // Untuk menyimpan layout tabel (baris dan kolom)
 
         async function convertPDF() {
             const fileInput = document.getElementById('pdfFile');
@@ -114,9 +113,6 @@
                     const typedarray = new Uint8Array(this.result);
                     const pdf = await pdfjsLib.getDocument(typedarray).promise;
                     extractedData = [];
-                    tableLayout = []; // Reset layout
-
-                    console.log("PDF loaded successfully. Processing pages...");
 
                     for (let i = 1; i <= pdf.numPages; i++) {
                         const page = await pdf.getPage(i);
@@ -135,16 +131,13 @@
 
                         const imageData = canvas.toDataURL("image/png");
 
-                        const { data: { text, words } } = await Tesseract.recognize(imageData, 'eng');
-
-                        console.log(`Page ${i} OCR Result:`, words); // Menampilkan hasil OCR untuk setiap halaman
-
-                        // Simpan layout tabel
-                        tableLayout.push(words);
-
-                        // Proses teks untuk tabel
-                        const row = words.map(word => word.text).join(' ');
-                        extractedData.push([row]);
+                        const { data: { text } } = await Tesseract.recognize(imageData, 'eng');
+                        const rows = text.split("\n").map(row => row.trim()).filter(row => row.length > 0);
+                        
+                        rows.forEach(row => {
+                            const cells = row.split(/\s+/);
+                            extractedData.push(cells);
+                        });
                     }
 
                     document.getElementById('status').innerText = "Conversion completed!";
@@ -164,20 +157,13 @@
             const table = document.getElementById('resultTable');
             table.innerHTML = ""; // Bersihkan tabel sebelumnya
 
-            // Buat tabel berdasarkan layout yang ditemukan oleh OCR
-            if (tableLayout.length === 0) {
-                console.log("No layout data found.");
-            }
-
-            tableLayout.forEach((rowWords, index) => {
+            data.forEach((row, rowIndex) => {
                 const tr = document.createElement("tr");
-
-                rowWords.forEach(word => {
+                row.forEach((cell, cellIndex) => {
                     const td = document.createElement("td");
-                    td.textContent = word.text; // Tempelkan teks sesuai posisi kata
+                    td.textContent = cell;
                     tr.appendChild(td);
                 });
-
                 table.appendChild(tr);
             });
         }
