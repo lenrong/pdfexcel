@@ -14,7 +14,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             background: #87CEEB;
             overflow: hidden;
             position: relative;
@@ -40,6 +40,8 @@
             text-align: center;
             position: relative;
             z-index: 10;
+            width: 80%;
+            max-width: 800px;
         }
         input, button {
             margin: 10px;
@@ -52,6 +54,29 @@
             color: white;
             cursor: pointer;
         }
+        #result {
+            margin-top: 20px;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background: #f9f9f9;
+            width: 100%;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
@@ -61,6 +86,12 @@
         <button onclick="convertPDF()">Convert</button>
         <button id="downloadExcel" style="display: none;" onclick="downloadExcel()">Download Excel</button>
         <p id="status"></p>
+        <div id="result" style="display: none;">
+            <h3>Hasil Konversi:</h3>
+            <table id="resultTable">
+                <!-- Hasil konversi akan ditampilkan di sini -->
+            </table>
+        </div>
     </div>
     <div class="city-animation"></div>
     <script>
@@ -106,6 +137,8 @@
 
                     document.getElementById('status').innerText = "Conversion completed!";
                     document.getElementById('downloadExcel').style.display = "block";
+                    document.getElementById('result').style.display = "block";
+                    displayResult(extractedData);
                 } catch (error) {
                     console.error("Error during conversion:", error);
                     document.getElementById('status').innerText = "Error during conversion. Check console for details.";
@@ -113,6 +146,21 @@
             };
 
             reader.readAsArrayBuffer(file);
+        }
+
+        function displayResult(data) {
+            const table = document.getElementById('resultTable');
+            table.innerHTML = ""; // Bersihkan tabel sebelumnya
+
+            data.forEach((row, rowIndex) => {
+                const tr = document.createElement("tr");
+                row.forEach((cell, cellIndex) => {
+                    const td = document.createElement("td");
+                    td.textContent = cell;
+                    tr.appendChild(td);
+                });
+                table.appendChild(tr);
+            });
         }
 
         function downloadExcel() {
