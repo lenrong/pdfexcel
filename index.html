@@ -15,39 +15,47 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            background: #87CEEB;
+            background: #1e1e2f;
             overflow: hidden;
             position: relative;
             margin: 0;
+            color: white;
         }
-        .city-animation {
+        .money-animation {
             position: absolute;
-            bottom: 0;
+            top: 0;
             width: 100%;
-            height: 200px;
-            background: url('https://i.ibb.co/7NfGB2P/city-animation.png') repeat-x;
-            animation: moveCity 20s linear infinite;
+            height: 100vh;
+            background: url('https://i.ibb.co/QFjWZCn/money-animation.gif') repeat;
+            opacity: 0.2;
         }
-        @keyframes moveCity {
-            from { background-position: 0 0; }
-            to { background-position: -2000px 0; }
+        .watermark {
+            position: absolute;
+            bottom: 20px;
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.1);
+            font-weight: bold;
+            user-select: none;
         }
         .container {
-            background: white;
+            background: rgba(255, 255, 255, 0.1);
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             text-align: center;
             position: relative;
             z-index: 10;
             width: 80%;
             max-width: 800px;
+            backdrop-filter: blur(10px);
         }
         input, button {
             margin: 10px;
             padding: 10px;
             border-radius: 5px;
             border: 1px solid #ddd;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
         }
         button {
             background: #28a745;
@@ -62,7 +70,7 @@
             border: 1px solid #ddd;
             padding: 10px;
             border-radius: 5px;
-            background: #f9f9f9;
+            background: rgba(255, 255, 255, 0.1);
             width: 100%;
         }
         table {
@@ -71,7 +79,7 @@
             margin-top: 10px;
         }
         table, th, td {
-            border: 1px solid #ddd;
+            border: 1px solid white;
         }
         th, td {
             padding: 8px;
@@ -80,6 +88,7 @@
     </style>
 </head>
 <body>
+    <div class="money-animation"></div>
     <div class="container">
         <h2>Ubur Ubur Ikan Lele - PDF ke Excel</h2>
         <input type="file" id="pdfFile" accept="application/pdf">
@@ -88,12 +97,10 @@
         <p id="status"></p>
         <div id="result" style="display: none;">
             <h3>Hasil Konversi:</h3>
-            <table id="resultTable">
-                <!-- Hasil konversi akan ditampilkan di sini -->
-            </table>
+            <table id="resultTable"></table>
         </div>
     </div>
-    <div class="city-animation"></div>
+    <div class="watermark">Perbendaharaan BPKAD Kab. MAMUJU</div>
     <script>
         let extractedData = [];
 
@@ -155,11 +162,10 @@
 
         function displayResult(data) {
             const table = document.getElementById('resultTable');
-            table.innerHTML = ""; // Bersihkan tabel sebelumnya
-
-            data.forEach((row, rowIndex) => {
+            table.innerHTML = "";
+            data.forEach(row => {
                 const tr = document.createElement("tr");
-                row.forEach((cell, cellIndex) => {
+                row.forEach(cell => {
                     const td = document.createElement("td");
                     td.textContent = cell;
                     tr.appendChild(td);
