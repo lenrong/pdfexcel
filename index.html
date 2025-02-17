@@ -123,20 +123,23 @@
 
                     for (let i = 1; i <= pdf.numPages; i++) {
                         const page = await pdf.getPage(i);
-                        const textContent = await page.getTextContent();
-                        const rows = [];
-                        let currentRow = [];
+                        const scale = 2;
+                        const viewport = page.getViewport({ scale });
 
-                        textContent.items.forEach((item, index) => {
-                            if (index > 0 && item.transform[5] !== textContent.items[index - 1].transform[5]) {
-                                rows.push(currentRow);
-                                currentRow = [];
-                            }
-                            currentRow.push(item.str);
-                        });
-                        if (currentRow.length) rows.push(currentRow);
+                        const canvas = document.createElement("canvas");
+                        const context = canvas.getContext("2d");
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
 
-                        extractedData.push(...rows);
+                        await page.render({
+                            canvasContext: context,
+                            viewport: viewport
+                        }).promise;
+
+                        const imageData = canvas.toDataURL("image/png");
+
+                        const { data: { text } } = await Tesseract.recognize(imageData, 'eng');
+                        extractedData.push(text.split("\n"));
                     }
 
                     document.getElementById('status').innerText = "Conversion completed!";
