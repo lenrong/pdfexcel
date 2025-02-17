@@ -1,85 +1,193 @@
-<script>
-    let extractedData = [];
-    let tableLayout = []; // Untuk menyimpan layout tabel (baris dan kolom)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ubur Ubur Ikan Lele</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.0.2/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #87CEEB;
+            overflow: hidden;
+            position: relative;
+            margin: 0;
+        }
+        .city-animation {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 200px;
+            background: url('https://i.ibb.co/7NfGB2P/city-animation.png') repeat-x;
+            animation: moveCity 20s linear infinite;
+        }
+        @keyframes moveCity {
+            from { background-position: 0 0; }
+            to { background-position: -2000px 0; }
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            width: 80%;
+            max-width: 800px;
+        }
+        input, button {
+            margin: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        button {
+            background: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background: #f9f9f9;
+            width: 100%;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Ubur Ubur Ikan Lele - PDF ke Excel</h2>
+        <input type="file" id="pdfFile" accept="application/pdf">
+        <button onclick="convertPDF()">Convert</button>
+        <button id="downloadExcel" style="display: none;" onclick="downloadExcel()">Download Excel</button>
+        <p id="status"></p>
+        <div id="result" style="display: none;">
+            <h3>Hasil Konversi:</h3>
+            <table id="resultTable">
+                <!-- Hasil konversi akan ditampilkan di sini -->
+            </table>
+        </div>
+    </div>
+    <div class="city-animation"></div>
+    <script>
+        let extractedData = [];
+        let tableLayout = []; // Untuk menyimpan layout tabel (baris dan kolom)
 
-    async function convertPDF() {
-        const fileInput = document.getElementById('pdfFile');
-        if (!fileInput.files.length) {
-            alert("Pilih file PDF terlebih dahulu!");
-            return;
+        async function convertPDF() {
+            const fileInput = document.getElementById('pdfFile');
+            if (!fileInput.files.length) {
+                alert("Pilih file PDF terlebih dahulu!");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            document.getElementById('status').innerText = "Processing...";
+
+            reader.onload = async function() {
+                try {
+                    const typedarray = new Uint8Array(this.result);
+                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                    extractedData = [];
+                    tableLayout = []; // Reset layout
+
+                    console.log("PDF loaded successfully. Processing pages...");
+
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const scale = 2;
+                        const viewport = page.getViewport({ scale });
+
+                        const canvas = document.createElement("canvas");
+                        const context = canvas.getContext("2d");
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+
+                        await page.render({
+                            canvasContext: context,
+                            viewport: viewport
+                        }).promise;
+
+                        const imageData = canvas.toDataURL("image/png");
+
+                        const { data: { text, words } } = await Tesseract.recognize(imageData, 'eng');
+
+                        console.log(`Page ${i} OCR Result:`, words); // Menampilkan hasil OCR untuk setiap halaman
+
+                        // Simpan layout tabel
+                        tableLayout.push(words);
+
+                        // Proses teks untuk tabel
+                        const row = words.map(word => word.text).join(' ');
+                        extractedData.push([row]);
+                    }
+
+                    document.getElementById('status').innerText = "Conversion completed!";
+                    document.getElementById('downloadExcel').style.display = "block";
+                    document.getElementById('result').style.display = "block";
+                    displayResult(extractedData);
+                } catch (error) {
+                    console.error("Error during conversion:", error);
+                    document.getElementById('status').innerText = "Error during conversion. Check console for details.";
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
         }
 
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-        document.getElementById('status').innerText = "Processing...";
+        function displayResult(data) {
+            const table = document.getElementById('resultTable');
+            table.innerHTML = ""; // Bersihkan tabel sebelumnya
 
-        reader.onload = async function() {
-            try {
-                const typedarray = new Uint8Array(this.result);
-                const pdf = await pdfjsLib.getDocument(typedarray).promise;
-                extractedData = [];
-                tableLayout = []; // Reset layout
-
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const scale = 2;
-                    const viewport = page.getViewport({ scale });
-
-                    const canvas = document.createElement("canvas");
-                    const context = canvas.getContext("2d");
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
-
-                    await page.render({
-                        canvasContext: context,
-                        viewport: viewport
-                    }).promise;
-
-                    const imageData = canvas.toDataURL("image/png");
-
-                    const { data: { text, words } } = await Tesseract.recognize(imageData, 'eng');
-
-                    // Simpan layout tabel
-                    tableLayout.push(words);
-
-                    // Proses teks untuk tabel
-                    const row = words.map(word => word.text).join(' ');
-                    extractedData.push([row]);
-                }
-
-                document.getElementById('status').innerText = "Conversion completed!";
-                document.getElementById('downloadExcel').style.display = "block";
-                document.getElementById('result').style.display = "block";
-                displayResult(extractedData);
-            } catch (error) {
-                console.error("Error during conversion:", error);
-                document.getElementById('status').innerText = "Error during conversion. Check console for details.";
+            // Buat tabel berdasarkan layout yang ditemukan oleh OCR
+            if (tableLayout.length === 0) {
+                console.log("No layout data found.");
             }
-        };
 
-        reader.readAsArrayBuffer(file);
-    }
+            tableLayout.forEach((rowWords, index) => {
+                const tr = document.createElement("tr");
 
-    function displayResult(data) {
-        const table = document.getElementById('resultTable');
-        table.innerHTML = ""; // Bersihkan tabel sebelumnya
+                rowWords.forEach(word => {
+                    const td = document.createElement("td");
+                    td.textContent = word.text; // Tempelkan teks sesuai posisi kata
+                    tr.appendChild(td);
+                });
 
-        // Buat tabel berdasarkan layout yang ditemukan oleh OCR
-        tableLayout.forEach(rowWords => {
-            const tr = document.createElement("tr");
-            rowWords.forEach(word => {
-                const td = document.createElement("td");
-                td.textContent = word.text; // Tempelkan teks sesuai posisi kata
-                tr.appendChild(td);
+                table.appendChild(tr);
             });
-            table.appendChild(tr);
-        });
-    }
+        }
 
-    function downloadExcel() {
-        const ws = XLSX.utils.aoa_to_sheet(extractedData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Extracted Data");
-        XLSX.writeFile(wb, "Converted.xlsx");
-    }
-</script>
+        function downloadExcel() {
+            const ws = XLSX.utils.aoa_to_sheet(extractedData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Extracted Data");
+            XLSX.writeFile(wb, "Converted.xlsx");
+        }
+    </script>
+</body>
+</html>
